@@ -12,7 +12,7 @@ Initialise a cookie store
 CookieStore cookieStore = new CookieStore();
 ```
 
-When you get a Set-Cookie header, pass it to the cookie store after stripping the 
+When you get a Set-Cookie header, pass it to the cookie store after stripping the "Set-Cookie:" portion
 
 ```dart
 for(header in responseHeaders){
