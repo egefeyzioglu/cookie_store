@@ -2,7 +2,7 @@
 
 A Cookie management plugin for HTTP/HTTPS connections.
 
-Parses Set-Cookie headers and generates Cookie headers for requests.
+Parses Set-Cookie headers and generates Cookie headers for requests, in accordance with RFC 6265.
 
 ## Usage
 
