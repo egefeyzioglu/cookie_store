@@ -120,14 +120,24 @@ class CookieStore {
   /// this method. It wouldn't make sense to spend time reattaching the pieces
   /// for the name to immediately be stripped here.
   ///
+  /// Supports the old-style (RFC 2109) Set-Cookie header with multiple cookies
+  /// per line. This use is discouraged.
+  ///
   /// For more information:
   ///   https://datatracker.ietf.org/doc/html/rfc6265
   bool updateCookies(
       String setCookieHeader, String requestDomain, String requestPath) {
     String name, value;
     Map<String, String> attrs;
-    (name, value, attrs) = parseSetCookie(setCookieHeader);
-    return _processCookie(name, value, attrs, requestDomain, requestPath);
+    // Support multiple cookies per header. This is technically not allowed by
+    // RFC 6265 but some servers still send cookies this way.
+    final headers = setCookieHeader.split(',');
+    bool ok = true;
+    for (String header in headers) {
+      (name, value, attrs) = parseSetCookie(header);
+      ok &= _processCookie(name, value, attrs, requestDomain, requestPath);
+    }
+    return ok;
   }
 
   /// Get the cookies you need to submit for a given [requestDomain] and a

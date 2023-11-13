@@ -30,6 +30,12 @@ void main() {
             "<cookie-value>;asdasdasd=asdasdasd;asdffds=asdfsf"),
         throwsFormatException);
   });
+  test('Cookie Store - Test multiple cookies per header', () {
+    /// TODO: Minimal test, expand on this
+    CookieStore store = CookieStore();
+    store.updateCookies("test=true,test2=true", "example.com", "/");
+    expect(store.cookies.length, 2);
+  });
   test('Cookie Store - Test the canonicalisation method', () {
     CookieStore store = CookieStore();
 
