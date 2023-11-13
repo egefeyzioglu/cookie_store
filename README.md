@@ -1,5 +1,7 @@
 # Cookie Store
 
+[![Dart Tests](https://github.com/egefeyzioglu/cookie_store/actions/workflows/dart-tests.yml/badge.svg)](https://github.com/egefeyzioglu/cookie_store/actions/workflows/dart-tests.yml)
+
 A Cookie management plugin for HTTP/HTTPS connections.
 
 Parses Set-Cookie headers and generates Cookie headers for requests, in accordance with RFC 6265.
