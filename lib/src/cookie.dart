@@ -79,11 +79,13 @@ class CookieStore {
       // Otherwise, start a new pile
       if (!found) cookiesPerDomain[cookie.domain] = [cookie];
     }
-    // If any are excessive, delete cookies from that domain
+    // If any are excessive, delete excessive cookies from that domain
     for (var cookiesForThisDomain in cookiesPerDomain.entries) {
       if (cookiesForThisDomain.value.length > numExcessive) {
+        int numLeft = cookiesForThisDomain.value.length - numExcessive;
         for (var cookie in cookiesForThisDomain.value) {
           _cookies.remove(cookie);
+          if (--numLeft == 0) break;
         }
       }
     }
@@ -97,9 +99,13 @@ class CookieStore {
     _cookies.sort(
         (Cookie x, Cookie y) => x.lastAccessTime.compareTo(y.lastAccessTime));
     int numLeft = _cookies.length - targetNumCookies;
+    List<Cookie> toRemove = [];
     for (var cookie in _cookies) {
-      _cookies.remove(cookie);
+      toRemove.add(cookie);
       if (--numLeft == 0) break;
+    }
+    for (var cookie in toRemove) {
+      _cookies.remove(cookie);
     }
     return true;
   }

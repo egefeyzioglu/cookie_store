@@ -6,3 +6,8 @@ Allow RFC2109-style multi-cookie Set-Cookie headers
 
 ## 0.2.1
 Add test badge to the README
+
+## 0.2.2
+Fix crash when force shrinking cookie store.
+
+Also delete only excessive cookies (not all cookies from excessive domains) when shrinking with `force=false`. (This was the intended behaviour.)
