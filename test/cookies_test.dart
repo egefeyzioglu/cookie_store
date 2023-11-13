@@ -124,6 +124,20 @@ void main() {
             "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"));
   });
 
+  test('Test cookie deletion', (){
+    CookieStore store = CookieStore();
+    for(int i = 0; i < 10; i++){
+        store.updateCookies("test$i=true", "example.com", "/");
+    }
+    expect(store.cookies.length, 10);
+    store.reduceSize(0, false);
+    expect(store.cookies.length, 10);
+    store.reduceSize(0, false, numExcessive: 9);
+    expect(store.cookies.length, 9);
+    store.reduceSize(0, true);
+    expect(store.cookies.length, 0);
+  });
+
   test('End to end tests', () {
     CookieStore store = CookieStore();
     store.updateCookies("PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3", "example.com",
