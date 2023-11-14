@@ -563,4 +563,7 @@ class Cookie {
 
   @override
   int get hashCode => ("$name\\\\\\$domain\\\\\\$path").hashCode;
+
+  @override
+  String toString() => "$name=$value, domain='$domain', path='$path'";
 }
