@@ -124,10 +124,10 @@ void main() {
             "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"));
   });
 
-  test('Test cookie deletion', (){
+  test('Test cookie deletion', () {
     CookieStore store = CookieStore();
-    for(int i = 0; i < 10; i++){
-        store.updateCookies("test$i=true", "example.com", "/");
+    for (int i = 0; i < 10; i++) {
+      store.updateCookies("test$i=true", "example.com", "/");
     }
     expect(store.cookies.length, 10);
     store.reduceSize(0, false);
@@ -146,10 +146,14 @@ void main() {
         store.getCookiesForRequest("example.com", "/"));
     expect("PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3", cookieHeader);
 
-    store.updateCookies(
-        "lang=en/ca", "example.com", "/sample-directory/sample.php");
+    store.updateCookies("lang=en/ca", "example.com", "/");
     cookieHeader = CookieStore.buildCookieHeader(
         store.getCookiesForRequest("example.com", "/"));
     expect("PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3;lang=en/ca", cookieHeader);
+
+    store.updateCookies("test=true", "example.com", "/");
+    cookieHeader = CookieStore.buildCookieHeader(
+        store.getCookiesForRequest("example.com", "/example"));
+    expect("lang=en/ca;test=true", cookieHeader);
   });
 }
