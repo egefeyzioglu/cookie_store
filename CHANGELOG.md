@@ -18,3 +18,5 @@ Downgrade meta package to ^1.9.0
 ## 0.3.0
 Fix path matching when returning cookies
 
+## 0.3.1
+Allow HTTP-style dates for the expires attribute
