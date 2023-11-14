@@ -11,3 +11,7 @@ Add test badge to the README
 Fix crash when force shrinking cookie store.
 
 Also delete only excessive cookies (not all cookies from excessive domains) when shrinking with `force=false`. (This was the intended behaviour.)
+
+## 0.2.3
+Downgrade meta package to ^1.9.0
+
