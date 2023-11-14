@@ -15,3 +15,6 @@ Also delete only excessive cookies (not all cookies from excessive domains) when
 ## 0.2.3
 Downgrade meta package to ^1.9.0
 
+## 0.3.0
+Fix path matching when returning cookies
+

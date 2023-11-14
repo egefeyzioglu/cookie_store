@@ -156,7 +156,8 @@ class CookieStore {
     List<Cookie> ret = [];
     for (Cookie cookie in cookies) {
       if (_domainMatches(cookie.domain, requestDomain) &&
-          pathMatches(cookie.path, requestPath)) {
+          (pathMatches(cookie.path, requestPath) ||
+              pathMatches(requestPath, cookie.path))) {
         ret.add(cookie);
       }
     }
