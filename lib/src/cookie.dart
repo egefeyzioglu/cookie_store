@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:punycode/punycode.dart';
 import 'package:meta/meta.dart';
 
@@ -137,7 +138,7 @@ class CookieStore {
     Map<String, String> attrs;
     // Support multiple cookies per header. This is technically not allowed by
     // RFC 6265 but some servers still send cookies this way.
-    final headers = setCookieHeader.split(',');
+    final headers = setCookieHeader.split(RegExp(',[^\\W]'));
     bool ok = true;
     for (String header in headers) {
       (name, value, attrs) = parseSetCookie(header);
@@ -352,7 +353,7 @@ class CookieStore {
 
       /// TODO: This is technically not compliant with RFC 6265 but should work
       /// in almost all instances in practice
-      cookie.expiryTime = DateTime.parse(attrs["expires"]!);
+      cookie.expiryTime = HttpDate.parse(attrs["expires"]!);
     } else {
       // Otherwise:
       // Cookie is not persistent
@@ -562,4 +563,7 @@ class Cookie {
 
   @override
   int get hashCode => ("$name\\\\\\$domain\\\\\\$path").hashCode;
+
+  @override
+  String toString() => "$name=$value, domain='$domain', path='$path'";
 }

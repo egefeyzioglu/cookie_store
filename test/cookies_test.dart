@@ -35,6 +35,10 @@ void main() {
     CookieStore store = CookieStore();
     store.updateCookies("test=true,test2=true", "example.com", "/");
     expect(store.cookies.length, 2);
+    // Make sure dates don't get split
+    store.updateCookies(
+        "asd=fgd;expires=Fri, 23 Apr 2800 13:45:56 GMT", "example.com", "/");
+    expect(store.cookies.length, 3);
   });
   test('Cookie Store - Test the canonicalisation method', () {
     CookieStore store = CookieStore();
