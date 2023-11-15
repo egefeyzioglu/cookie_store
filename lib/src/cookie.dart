@@ -353,7 +353,25 @@ class CookieStore {
 
       /// TODO: This is technically not compliant with RFC 6265 but should work
       /// in almost all instances in practice
-      cookie.expiryTime = HttpDate.parse(attrs["expires"]!);
+      try {
+        cookie.expiryTime = HttpDate.parse(attrs["expires"]!);
+      } catch (e) {
+        cookie.expiryTime = HttpDate.parse(attrs["expires"]!.replaceAllMapped(
+            "Mon|Tue|Wed|Thu|Fri|Sat|Sun",
+            (match) =>
+                (switch (match.group(0)) {
+                  "Mon" => "Monday",
+                  "Tue" => "Tuesday",
+                  "Wed" => "Wednesday",
+                  "Thu" => "Thursday",
+                  "Fri" => "Friday",
+                  "Sat" => "Saturday",
+                  "Sun" => "Sunday",
+                  null => null,
+                  String() => null,
+                }) ??
+                ""));
+      }
     } else {
       // Otherwise:
       // Cookie is not persistent
