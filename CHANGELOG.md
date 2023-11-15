@@ -20,3 +20,6 @@ Fix path matching when returning cookies
 
 ## 0.3.1
 Allow HTTP-style dates for the expires attribute
+
+## 0.3.2
+Some bugfixes, be even more permissive when parsing dates in the expires attribute
