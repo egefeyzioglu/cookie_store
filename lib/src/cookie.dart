@@ -138,7 +138,7 @@ class CookieStore {
     Map<String, String> attrs;
     // Support multiple cookies per header. This is technically not allowed by
     // RFC 6265 but some servers still send cookies this way.
-    final headers = setCookieHeader.split(RegExp(',[^\\W]'));
+    final headers = setCookieHeader.split(RegExp(',(?!\\W)'));
     bool ok = true;
     for (String header in headers) {
       (name, value, attrs) = parseSetCookie(header);
