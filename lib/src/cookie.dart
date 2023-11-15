@@ -351,26 +351,19 @@ class CookieStore {
       // Cookie is persistent
       cookie.persistent = true;
 
-      /// TODO: This is technically not compliant with RFC 6265 but should work
-      /// in almost all instances in practice
+      // Parse the date, I'm trying to be as permissive as possible. I hate
+      // the internet so fucking much
       try {
         cookie.expiryTime = HttpDate.parse(attrs["expires"]!);
       } catch (e) {
-        cookie.expiryTime = HttpDate.parse(attrs["expires"]!.replaceAllMapped(
-            "Mon|Tue|Wed|Thu|Fri|Sat|Sun",
-            (match) =>
-                (switch (match.group(0)) {
-                  "Mon" => "Monday",
-                  "Tue" => "Tuesday",
-                  "Wed" => "Wednesday",
-                  "Thu" => "Thursday",
-                  "Fri" => "Friday",
-                  "Sat" => "Saturday",
-                  "Sun" => "Sunday",
-                  null => null,
-                  String() => null,
-                }) ??
-                ""));
+        attrs["expires"] = attrs["expires"]!.replaceAll("Mon", "Monday");
+        attrs["expires"] = attrs["expires"]!.replaceAll("Tue", "Tuesday");
+        attrs["expires"] = attrs["expires"]!.replaceAll("Wed", "Wednesday");
+        attrs["expires"] = attrs["expires"]!.replaceAll("Thu", "Thursday");
+        attrs["expires"] = attrs["expires"]!.replaceAll("Fri", "Friday");
+        attrs["expires"] = attrs["expires"]!.replaceAll("Sat", "Saturday");
+        attrs["expires"] = attrs["expires"]!.replaceAll("Sun", "Sunday");
+        cookie.expiryTime = HttpDate.parse(attrs["expires"]!);
       }
     } else {
       // Otherwise:
