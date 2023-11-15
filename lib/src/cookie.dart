@@ -138,7 +138,7 @@ class CookieStore {
     Map<String, String> attrs;
     // Support multiple cookies per header. This is technically not allowed by
     // RFC 6265 but some servers still send cookies this way.
-    final headers = setCookieHeader.split(RegExp(',[^\\W]'));
+    final headers = setCookieHeader.split(RegExp(',(?!\\W)'));
     bool ok = true;
     for (String header in headers) {
       (name, value, attrs) = parseSetCookie(header);
@@ -351,9 +351,20 @@ class CookieStore {
       // Cookie is persistent
       cookie.persistent = true;
 
-      /// TODO: This is technically not compliant with RFC 6265 but should work
-      /// in almost all instances in practice
-      cookie.expiryTime = HttpDate.parse(attrs["expires"]!);
+      // Parse the date, I'm trying to be as permissive as possible. I hate
+      // the internet so fucking much
+      try {
+        cookie.expiryTime = HttpDate.parse(attrs["expires"]!);
+      } catch (e) {
+        attrs["expires"] = attrs["expires"]!.replaceAll("Mon", "Monday");
+        attrs["expires"] = attrs["expires"]!.replaceAll("Tue", "Tuesday");
+        attrs["expires"] = attrs["expires"]!.replaceAll("Wed", "Wednesday");
+        attrs["expires"] = attrs["expires"]!.replaceAll("Thu", "Thursday");
+        attrs["expires"] = attrs["expires"]!.replaceAll("Fri", "Friday");
+        attrs["expires"] = attrs["expires"]!.replaceAll("Sat", "Saturday");
+        attrs["expires"] = attrs["expires"]!.replaceAll("Sun", "Sunday");
+        cookie.expiryTime = HttpDate.parse(attrs["expires"]!);
+      }
     } else {
       // Otherwise:
       // Cookie is not persistent
