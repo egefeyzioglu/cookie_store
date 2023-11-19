@@ -6,8 +6,6 @@ A Cookie management plugin for HTTP/HTTPS connections.
 
 Parses Set-Cookie headers and generates Cookie headers for requests, in accordance with RFC 6265[^1].
 
-[^1]: Well, kind of. The internet is an awful, awful place where literally nobody abides by RFC's so this library is _very_ persmissive, especially with respect to date parsing. It is guaranteed, however, that an RFC 6265-compliant server will work correctly with this library. Please see below for the date formats that are allowed. If your server (or a server you want to talk to) uses another form of nonstandard date format, please create an issue or a pull request. I will try to implement it.
-
 ## Usage
 
 Initialise a cookie store
@@ -96,3 +94,6 @@ This library is very permissive with respect to parsing date formats provided by
   - `Thursday, 1 Jan 1970 23:59:59 GMT`
   - `Thu, 1-Jan-1970 23:59:59 GMT`
   - `Thursday Jan  1 23:59:59 1970`
+
+  
+[^1]: Well, kind of. The internet is an awful, awful place where literally nobody abides by RFC's so this library is _very_ persmissive, especially with respect to date parsing. It is guaranteed, however, that an RFC 6265-compliant server will work correctly with this library. Please see [above](#acceptable-date-formats) for the date formats that are allowed. If your server (or a server you want to talk to) uses another form of nonstandard date format, please create an issue or a pull request. I will try to implement it.
