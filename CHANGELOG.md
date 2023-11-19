@@ -23,3 +23,6 @@ Allow HTTP-style dates for the expires attribute
 
 ## 0.3.2
 Some bugfixes, be even more permissive when parsing dates in the expires attribute
+
+# 0.3.3
+Be even more permissive when parsing dates, also mention this in the README
