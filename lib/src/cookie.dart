@@ -363,7 +363,22 @@ class CookieStore {
         attrs["expires"] = attrs["expires"]!.replaceAll("Fri", "Friday");
         attrs["expires"] = attrs["expires"]!.replaceAll("Sat", "Saturday");
         attrs["expires"] = attrs["expires"]!.replaceAll("Sun", "Sunday");
-        cookie.expiryTime = HttpDate.parse(attrs["expires"]!);
+        try {
+          cookie.expiryTime = HttpDate.parse(attrs["expires"]!);
+        } catch (e) {
+          attrs["expires"] = attrs["expires"]!.replaceAll("Monday", "Mon");
+          attrs["expires"] = attrs["expires"]!.replaceAll("Tuesday", "Tue");
+          attrs["expires"] = attrs["expires"]!.replaceAll("Wednesday", "Wed");
+          attrs["expires"] = attrs["expires"]!.replaceAll("Thursday", "Thu");
+          attrs["expires"] = attrs["expires"]!.replaceAll("Friday", "Fri");
+          attrs["expires"] = attrs["expires"]!.replaceAll("Saturday", "Sat");
+          attrs["expires"] = attrs["expires"]!.replaceAll("Sunday", "Sun");
+          try {
+            cookie.expiryTime = HttpDate.parse(attrs["expires"]!);
+          } catch (e) {
+            return false;
+          }
+        }
       }
     } else {
       // Otherwise:
