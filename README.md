@@ -1,6 +1,6 @@
 # Cookie Store
 
-[![Dart Tests](https://github.com/egefeyzioglu/cookie_store/actions/workflows/dart-tests.yml/badge.svg)](https://github.com/egefeyzioglu/cookie_store/actions/workflows/dart-tests.yml)
+[![Dart Tests](https://github.com/egefeyzioglu/cookie_store/actions/workflows/dart-tests.yml/badge.svg)](https://github.com/egefeyzioglu/cookie_store/actions/workflows/dart-tests.yml) [![Dart Analyze](https://github.com/egefeyzioglu/cookie_store/actions/workflows/dart-analyze.yml/badge.svg)](https://github.com/egefeyzioglu/cookie_store/actions/workflows/dart-analyze.yml)
 
 A Cookie management plugin for HTTP/HTTPS connections.
 
