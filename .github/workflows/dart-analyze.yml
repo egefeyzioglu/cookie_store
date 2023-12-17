@@ -1,0 +1,18 @@
+name: "Dart Analyze"
+on:
+    push:
+    pull_request:
+        branches: [$default-branch, $protected-branches]
+
+jobs:
+    analyze:
+        name: Dart Analyze
+        runs-on: Linux
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+            - uses: dart-lang/setup-dart@v1
+            - name: Get dependencies
+              run: dart pub get
+            - name: Dart Analyze
+              run: dart analyze

@@ -26,3 +26,9 @@ Some bugfixes, be even more permissive when parsing dates in the expires attribu
 
 # 0.3.3
 Be even more permissive when parsing dates, also mention this in the README
+
+# 0.3.4
+Add Dart Analyze badge to README
+
+# 0.3.5
+Fix mistakes in example code in README

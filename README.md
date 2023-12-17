@@ -1,6 +1,6 @@
 # Cookie Store
 
-[![Dart Tests](https://github.com/egefeyzioglu/cookie_store/actions/workflows/dart-tests.yml/badge.svg)](https://github.com/egefeyzioglu/cookie_store/actions/workflows/dart-tests.yml)
+[![Dart Tests](https://github.com/egefeyzioglu/cookie_store/actions/workflows/dart-tests.yml/badge.svg)](https://github.com/egefeyzioglu/cookie_store/actions/workflows/dart-tests.yml) [![Dart Analyze](https://github.com/egefeyzioglu/cookie_store/actions/workflows/dart-analyze.yml/badge.svg)](https://github.com/egefeyzioglu/cookie_store/actions/workflows/dart-analyze.yml)
 
 A Cookie management plugin for HTTP/HTTPS connections.
 
@@ -29,7 +29,7 @@ When you're making a request, either get the cookies and add them to your reques
 
 ```dart
 final String domain = "example.com"
-final String path + "/api/whatever";
+final String path = domain + "/api/whatever";
 
 List<Cookie> cookies = cookieStore.getCookiesForRequest(domain, path);
 
@@ -41,9 +41,10 @@ or have the cookie store build the header for you
 
 ```dart
 final String domain = "example.com"
-final String path + "/api/whatever";
+final String path = domain + "/api/whatever";
 
-String cookieHeader = CookieStore.buildCookieHeader(cookieStore.getCookiesForRequest(domain, path));
+String cookieHeader = CookieStore.buildCookieHeader(
+  cookieStore.getCookiesForRequest(domain, path));
 
 // Send request
 ```
