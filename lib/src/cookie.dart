@@ -352,28 +352,32 @@ class CookieStore {
 
       // Parse the date, I'm trying to be as permissive as possible. I hate
       // the internet so fucking much
+      String expires = attrs["expires"]!;
+
+      final Iterable<({String fullname, String abbreviation})> weekdays = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+      ].map((e) => (fullname: e, abbreviation: e.substring(0, 3)));
+
       try {
-        cookie.expiryTime = HttpDate.parse(attrs["expires"]!);
+        cookie.expiryTime = HttpDate.parse(expires);
       } catch (e) {
-        attrs["expires"] = attrs["expires"]!.replaceAll("Mon", "Monday");
-        attrs["expires"] = attrs["expires"]!.replaceAll("Tue", "Tuesday");
-        attrs["expires"] = attrs["expires"]!.replaceAll("Wed", "Wednesday");
-        attrs["expires"] = attrs["expires"]!.replaceAll("Thu", "Thursday");
-        attrs["expires"] = attrs["expires"]!.replaceAll("Fri", "Friday");
-        attrs["expires"] = attrs["expires"]!.replaceAll("Sat", "Saturday");
-        attrs["expires"] = attrs["expires"]!.replaceAll("Sun", "Sunday");
+        for (final replacement in weekdays) {
+          expires = expires.replaceAll(replacement.abbreviation, replacement.fullname);
+        }
         try {
-          cookie.expiryTime = HttpDate.parse(attrs["expires"]!);
+          cookie.expiryTime = HttpDate.parse(expires);
         } catch (e) {
-          attrs["expires"] = attrs["expires"]!.replaceAll("Monday", "Mon");
-          attrs["expires"] = attrs["expires"]!.replaceAll("Tuesday", "Tue");
-          attrs["expires"] = attrs["expires"]!.replaceAll("Wednesday", "Wed");
-          attrs["expires"] = attrs["expires"]!.replaceAll("Thursday", "Thu");
-          attrs["expires"] = attrs["expires"]!.replaceAll("Friday", "Fri");
-          attrs["expires"] = attrs["expires"]!.replaceAll("Saturday", "Sat");
-          attrs["expires"] = attrs["expires"]!.replaceAll("Sunday", "Sun");
+          for (final replacement in weekdays) {
+            expires = expires.replaceAll(replacement.fullname, replacement.abbreviation);
+          }
           try {
-            cookie.expiryTime = HttpDate.parse(attrs["expires"]!);
+            cookie.expiryTime = HttpDate.parse(expires);
           } catch (e) {
             return false;
           }
