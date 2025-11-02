@@ -208,7 +208,7 @@ class CookieStore {
   /// the algorithm in RFC6265 section 5.2.
   ///
   /// [name] is the cookie name, [value] is the cookie value, and [attrs] are
-  /// attributes in key-value form, lowercase.
+  /// attributes in key-value form.
   ///
   /// May throw a [FormatException] if [header] is malformed
   ///
@@ -312,7 +312,7 @@ class CookieStore {
   }
 
   /// Process given Set-Cookie and add to [cookies].
-  /// It must be already broken down to name, value, and lowercase attributes
+  /// It must be already broken down to name, value, and attributes
   ///
   /// @return whether the cookie was accepted
   bool _processCookie(
@@ -322,6 +322,9 @@ class CookieStore {
     String requestDomain,
     String requestPath,
   ) {
+    bool containsKey(String key) => attrs.containsKey(key) || attrs.containsKey(key.toLowerCase());
+    String? attr(String key) => attrs[key] ?? attrs[key.toLowerCase()];
+
     // Go through the steps in RFC 6265 section 5.3
 
     // Step 1
@@ -331,12 +334,12 @@ class CookieStore {
     Cookie cookie = Cookie(name, value);
 
     // Step 3
-    if (attrs.containsKey("max-age")) {
+    if (containsKey("Max-Age")) {
       // If Max-Age is present:
       // Cookie is persistent
       cookie.persistent = true;
       // Value is the max age in seconds (or -1)
-      int seconds = int.parse(attrs["max-age"]!);
+      int seconds = int.parse(attr("Max-Age")!);
       if (seconds > 0) {
         // If the max age is not -1, calculate expiry time
         cookie.expiryTime = cookie.creationTime.add(Duration(seconds: seconds));
@@ -344,7 +347,7 @@ class CookieStore {
         // If the max age -1, set expiry time to 1 Jan 1970
         cookie.expiryTime = DateTime.fromMicrosecondsSinceEpoch(0);
       }
-    } else if (attrs.containsKey("expires")) {
+    } else if (containsKey("Expires")) {
       // Otherwise:
       // If Expires is present
       // Cookie is persistent
@@ -352,7 +355,7 @@ class CookieStore {
 
       // Parse the date, I'm trying to be as permissive as possible. I hate
       // the internet so fucking much
-      String expires = attrs["expires"]!;
+      String expires = attr("Expires")!;
 
       final Iterable<({String fullname, String abbreviation})> weekdays = [
         "Monday",
@@ -393,8 +396,8 @@ class CookieStore {
     }
 
     // Step 4
-    if (attrs.containsKey("domain")) {
-      cookie.domain = attrs["domain"]!;
+    if (containsKey("Domain")) {
+      cookie.domain = attr("domain")!;
     }
 
     // Step 5
@@ -406,7 +409,7 @@ class CookieStore {
         return false;
       } else {
         cookie.hostOnly = false;
-        cookie.domain = attrs["domain"]!;
+        cookie.domain = attr("domain")!;
       }
     } else {
       cookie.hostOnly = true;
@@ -414,8 +417,8 @@ class CookieStore {
     }
 
     // Step 7
-    if (attrs.containsKey("path")) {
-      cookie.path = attrs["path"]!;
+    if (containsKey("Path")) {
+      cookie.path = attr("Path")!;
     } else {
       cookie.path = requestPath;
     }

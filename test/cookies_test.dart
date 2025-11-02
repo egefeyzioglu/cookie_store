@@ -166,5 +166,17 @@ void main() {
       store.updateCookies("test=true", requestDomain, "/");
       check("/", "lang=en/ca;test=true");
     });
+
+    test('with path attribute', () {
+      assert(store.updateCookies('PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3; Path=/example/', requestDomain, "/sample-directory/sample.php"));
+      assert(store.updateCookies("lang=en/ca; Path=/login/path/page", requestDomain, "/sample-directory/sample.php"));
+      assert(store.updateCookies('test=true; Path=/', requestDomain, "/sample-directory/sample.php"));
+
+      check('/example', 'PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3;test=true', 'exactly matches path attribute');
+      check('/example/subpath/with/page', 'PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3;test=true', 'subpath of path attribute');
+      check('/', 'test=true', 'not a subpath of path attribute');
+      check('/login', 'test=true', 'path is below / but not part of example');
+      check('/login/path', 'lang=en/ca;test=true', 'path is below / but not part of example');
+    });
   });
 }
