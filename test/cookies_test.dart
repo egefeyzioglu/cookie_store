@@ -142,22 +142,29 @@ void main() {
     expect(store.cookies.length, 0);
   });
 
-  test('End to end tests', () {
-    CookieStore store = CookieStore();
-    store.updateCookies("PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3", "example.com",
-        "/sample-directory/sample.php");
-    String cookieHeader = CookieStore.buildCookieHeader(
-        store.getCookiesForRequest("example.com", "/"));
-    expect("PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3", cookieHeader);
+  group('Path handling', () {
+    const requestDomain = 'example.com';
+    late CookieStore store;
 
-    store.updateCookies("lang=en/ca", "example.com", "/");
-    cookieHeader = CookieStore.buildCookieHeader(
-        store.getCookiesForRequest("example.com", "/"));
-    expect("PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3;lang=en/ca", cookieHeader);
+    void check(String requestPath, String expectedCookieHeader, [String? reason]) {
+      final requestHeader = CookieStore.buildCookieHeader(store.getCookiesForRequest(requestDomain, requestPath));
+      expect(requestHeader, expectedCookieHeader, reason: '$requestPath $reason');
+    }
 
-    store.updateCookies("test=true", "example.com", "/");
-    cookieHeader = CookieStore.buildCookieHeader(
-        store.getCookiesForRequest("example.com", "/example"));
-    expect("lang=en/ca;test=true", cookieHeader);
+    setUp(() {
+      store = CookieStore();
+    });
+
+    test('without explicit path attribute', () {
+      store.updateCookies("PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3", requestDomain, "/sample-directory/sample.php");
+      check("/", "", "Request path is root and not below /sample-directory");
+      check("/sample-directory", "PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3");
+
+      store.updateCookies("lang=en/ca", requestDomain, "/");
+      check("/", "lang=en/ca");
+
+      store.updateCookies("test=true", requestDomain, "/");
+      check("/", "lang=en/ca;test=true");
+    });
   });
 }
