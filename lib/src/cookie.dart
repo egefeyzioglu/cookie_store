@@ -422,11 +422,11 @@ class CookieStore {
       cookie.path = "/";
     }
     // 5.1.4 Step 3
-    if (cookie.path.allMatches("/").length == 1) {
+    else if (cookie.path.allMatches("/").length == 1) {
       cookie.path = "/";
     }
     // 5.1.4 Step 4
-    if (cookie.path != "/") {
+    else {
       // Up to but not including the last "/" in the current cookie path
       cookie.path = cookie.path.substring(0, cookie.path.lastIndexOf("/"));
     }
