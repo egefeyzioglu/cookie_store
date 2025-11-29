@@ -8,7 +8,7 @@ class CookieStore {
   /// Would have private'd this but I want it accessible for testing. Just write
   /// your own regex or copy/paste from the source file. This is not in the
   /// package's public API and can change or disappear without notice. Also
-  /// like, JFC don't introduce a dependency for a string constant.
+  /// like, please don't introduce a dependency for a string constant lol.
   ///
   /// LDH Label format defined in RFC 5890 Section 2.3.1:
   ///
