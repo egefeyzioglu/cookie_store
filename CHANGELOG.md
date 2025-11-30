@@ -32,3 +32,6 @@ Add Dart Analyze badge to README
 
 # 0.3.5
 Fix mistakes in example code in README
+
+# 0.4.0
+Fix path handling and some other minor changes
