@@ -142,6 +142,25 @@ void main() {
     expect(store.cookies.length, 0);
   });
 
+  test('End to end tests', () {
+    CookieStore store = CookieStore();
+    store.updateCookies("PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3", "example.com", "/sample-directory/sample.php");
+    String cookieHeader = CookieStore.buildCookieHeader(store.getCookiesForRequest("example.com", "/"));
+    // the cookie was set on "/sample-directory/" so should not be used for "/"
+    expect("", cookieHeader);
+
+    store.updateCookies("lang=en/ca", "example.com", "/");
+    cookieHeader = CookieStore.buildCookieHeader(store.getCookiesForRequest("example.com", "/"));
+    expect("lang=en/ca", cookieHeader);
+
+    cookieHeader = CookieStore.buildCookieHeader(store.getCookiesForRequest("example.com", "/sample-directory"));
+    expect("PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3;lang=en/ca", cookieHeader);
+
+    store.updateCookies("test=true", "example.com", "/");
+    cookieHeader = CookieStore.buildCookieHeader(store.getCookiesForRequest("example.com", "/example"));
+    expect("lang=en/ca;test=true", cookieHeader);
+  });
+
   group('Path handling', () {
     const requestDomain = 'example.com';
     late CookieStore store;
