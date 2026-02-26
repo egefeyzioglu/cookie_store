@@ -4,25 +4,6 @@ import 'package:meta/meta.dart';
 import 'package:punycoder/punycoder.dart';
 
 class CookieStore {
-  /// Regex string that matches an LDH Label. Matches the entire string only.
-  ///
-  /// Would have private'd this but I want it accessible for testing. Just write
-  /// your own regex or copy/paste from the source file. This is not in the
-  /// package's public API and can change or disappear without notice. Also
-  /// like, please don't introduce a dependency for a string constant lol.
-  ///
-  /// LDH Label format defined in RFC 5890 Section 2.3.1:
-  ///
-  /// ASCII uppercase, lowercase, or numbers. Dashes allowed other than in the
-  /// first and last position. Complete string must not be longer than
-  /// 63 octets.
-  ///
-  /// More information:
-  ///   https://datatracker.ietf.org/doc/html/rfc5890#section-2.3.1
-  @visibleForTesting
-  static const String ldhLabelRegexString =
-      r'(^[A-Za-z0-9][A-Za-z0-9-]{0,61}[A-Za-z0-9]$)|(^[A-Za-z0-9]$)';
-
   List<Cookie> _cookies = [];
 
   List<Cookie> get cookies {
@@ -509,17 +490,8 @@ class CookieStore {
   }
 
   /// Converts a given [requestDomain] to a canonical representation per RFC6265
-  /// !!EXTERNAL USER: READ BELOW!!
   ///
   /// Throws a [FormatException] if [requestDomain] is invalid
-  ///
-  /// I really hate that I have to expose this, since I don't want people to
-  /// rely on my implementation -it is not meant to be a perfect implementation,
-  /// and I have not thought through all edge cases. Some might come up for you
-  /// that won't not come up for my use of this method.
-  ///
-  /// If you use this implementation, you might introduce bugs into your code.
-  /// Please just reimplement it yourself. You have been warned.
   ///
   /// More information: RFC6265 Section 5.1.2
   ///             https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.2
