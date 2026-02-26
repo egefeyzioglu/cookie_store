@@ -98,7 +98,8 @@ class CookieStore {
     // If force isn't set, return false.
     if (!force) return _cookies.length <= targetNumCookies;
     _cookies.sort(
-        (Cookie x, Cookie y) => x.lastAccessTime.compareTo(y.lastAccessTime));
+      (Cookie x, Cookie y) => x.lastAccessTime.compareTo(y.lastAccessTime),
+    );
     int numLeft = _cookies.length - targetNumCookies;
     List<Cookie> toRemove = [];
     for (var cookie in _cookies) {
@@ -133,7 +134,10 @@ class CookieStore {
   /// For more information:
   ///   https://datatracker.ietf.org/doc/html/rfc6265
   bool updateCookies(
-      String setCookieHeader, String requestDomain, String requestPath) {
+    String setCookieHeader,
+    String requestDomain,
+    String requestPath,
+  ) {
     String name, value;
     Map<String, String> attrs;
     // Support multiple cookies per header. This is technically not allowed by
@@ -220,11 +224,9 @@ class CookieStore {
   ///
   /// For more information:
   ///   https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.2
-  (
-    String name,
-    String value,
-    Map<String, String> attrs,
-  ) parseSetCookie(String header) {
+  (String name, String value, Map<String, String> attrs) parseSetCookie(
+    String header,
+  ) {
     // set-cookie-string portion:
     // Step 1
 
@@ -235,8 +237,9 @@ class CookieStore {
       // If the set-cookie-string contains a semicolon:
       // Split up the set-cookie-string
       nameValuePair = header.substring(0, firstSemicolon);
-      unparsedAttributes =
-          header.substring(firstSemicolon); // Yes, include the semicolon
+      unparsedAttributes = header.substring(
+        firstSemicolon,
+      ); // Yes, include the semicolon
     } else {
       // Otherwise:
       // Everything is name-value-pair
@@ -258,9 +261,10 @@ class CookieStore {
     String name =
         (valueAfter == 0) ? "" : nameValuePair.substring(0, valueAfter);
     // Same with the value
-    String value = (valueAfter == nameValuePair.length - 1)
-        ? ""
-        : nameValuePair.substring(valueAfter + 1);
+    String value =
+        (valueAfter == nameValuePair.length - 1)
+            ? ""
+            : nameValuePair.substring(valueAfter + 1);
 
     // Step 4
     name = name.trim();
@@ -299,9 +303,10 @@ class CookieStore {
         // If the attribute name is empty, don't run substring (it will throw)
         attrName = (equalsAt == 0) ? "" : cookieAv.substring(0, equalsAt);
         // Same with the attribute value
-        attrValue = (equalsAt == cookieAv.length)
-            ? ""
-            : cookieAv.substring(equalsAt + 1);
+        attrValue =
+            (equalsAt == cookieAv.length)
+                ? ""
+                : cookieAv.substring(equalsAt + 1);
       }
       // Step 5
       attrs[attrName.trim()] = attrValue.trim();
@@ -322,7 +327,8 @@ class CookieStore {
     String requestDomain,
     String requestPath,
   ) {
-    bool containsKey(String key) => attrs.containsKey(key) || attrs.containsKey(key.toLowerCase());
+    bool containsKey(String key) =>
+        attrs.containsKey(key) || attrs.containsKey(key.toLowerCase());
     String? attr(String key) => attrs[key] ?? attrs[key.toLowerCase()];
 
     // Go through the steps in RFC 6265 section 5.3
@@ -371,13 +377,19 @@ class CookieStore {
         cookie.expiryTime = HttpDate.parse(expires);
       } catch (e) {
         for (final replacement in weekdays) {
-          expires = expires.replaceAll(replacement.abbreviation, replacement.fullname);
+          expires = expires.replaceAll(
+            replacement.abbreviation,
+            replacement.fullname,
+          );
         }
         try {
           cookie.expiryTime = HttpDate.parse(expires);
         } catch (e) {
           for (final replacement in weekdays) {
-            expires = expires.replaceAll(replacement.fullname, replacement.abbreviation);
+            expires = expires.replaceAll(
+              replacement.fullname,
+              replacement.abbreviation,
+            );
           }
           try {
             cookie.expiryTime = HttpDate.parse(expires);
@@ -531,7 +543,8 @@ class CookieStore {
       notNrLdh = !ldh.hasMatch(label); // If it is a match, it is LDH
 
       // Then check if it is an XN-label (short circuit if above was true)
-      notNrLdh = notNrLdh ||
+      notNrLdh =
+          notNrLdh ||
           (label.length >= 4 && (label[2] == '-' && label[3] == '-'));
 
       // B. If it is not an NR-LDH label, convert it to an A-label
@@ -582,8 +595,8 @@ class Cookie {
     this.value, {
     DateTime? creationTime,
     DateTime? lastAccessTime,
-  })  : creationTime = creationTime ?? DateTime.now(),
-        lastAccessTime = lastAccessTime ?? DateTime.now();
+  }) : creationTime = creationTime ?? DateTime.now(),
+       lastAccessTime = lastAccessTime ?? DateTime.now();
 
   @override
   bool operator ==(Object other) {
