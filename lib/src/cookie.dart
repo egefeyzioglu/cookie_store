@@ -1,6 +1,7 @@
 import 'dart:io';
-import 'package:punycode/punycode.dart';
+
 import 'package:meta/meta.dart';
+import 'package:punycoder/punycoder.dart';
 
 class CookieStore {
   /// Regex string that matches an LDH Label. Matches the entire string only.
@@ -524,56 +525,7 @@ class CookieStore {
   ///             https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.2
   @visibleForTesting
   String toCanonical(String requestDomain) {
-    var outLabels = [];
-    // Step 1
-    final labels = requestDomain.split('.');
-    // Step 2
-    for (var label in labels) {
-      // A. Check if the label is not an NR-LDH label:
-      //    NR-LDH := LDH && NOT(R-LDH)
-      //            = LDH && NOT(XN-label)
-      //    So NOT(NR-LDH) = NOT(LDH && NOT(XN-label))
-      //                   = NOT(LDH) || XN-label
-
-      /// Is the current [label] not an NR-LDH label?
-      bool notNrLdh = false;
-
-      // First check if it is not an LDH label
-      final ldh = RegExp(ldhLabelRegexString);
-      notNrLdh = !ldh.hasMatch(label); // If it is a match, it is LDH
-
-      // Then check if it is an XN-label (short circuit if above was true)
-      notNrLdh =
-          notNrLdh ||
-          (label.length >= 4 && (label[2] == '-' && label[3] == '-'));
-
-      // B. If it is not an NR-LDH label, convert it to an A-label
-      //    otherwise, keep it as is
-      if (!notNrLdh) {
-        outLabels.add(label);
-      } else {
-        // An A-label is the sequence "xn--" followed by the output of the
-        // RFC3492 punycode algorithm.
-        // Don't catch the possible exception, pass upwards
-        outLabels.add("xn--${_toPunyCode(label).toLowerCase()}");
-      }
-    }
-    // Step 3
-    // 0x2E is just '.' but the RFC refers to it by codepoint so I figured
-    // I would too
-    return outLabels.join("\x2E");
-  }
-
-  /// Runs the RFC 3492 Punycode algorithm on a given [input] string and returns
-  /// the result.
-  ///
-  /// Throws a [FormatException] if the provided string is invalid
-  ///
-  /// More information: RFC 3492 https://datatracker.ietf.org/doc/html/rfc3492
-  String _toPunyCode(String input) {
-    // TODO: I should probably implement this myself and actually fail on
-    // overflow but oh well
-    return punycodeEncode(input);
+    return domainToAscii(requestDomain);
   }
 }
 
