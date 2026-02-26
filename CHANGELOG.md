@@ -35,3 +35,9 @@ Fix mistakes in example code in README
 
 # 0.4.0
 Fix path handling and some other minor changes
+
+# 0.5.0
+- Migrate from `package:punycode` to `package:punycoder`.
+- Simplify domain canonicalization logic using standard-compliant IDNA helpers.
+- Improve standard compliance for hostnames (handles IDNA2003 separators and stricter validation).
+- Bump minimum SDK to `3.7.2`.
