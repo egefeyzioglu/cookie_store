@@ -1,13 +1,12 @@
 name: cookie_store
 description: Manages cookies in accordance with RFC 6265
-version: 0.4.0
+version: 0.4.1
 homepage: https://github.com/egefeyzioglu/cookie_store
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
-  http: ^1.1.0
   meta: ^1.9.0
   punycode: ^1.0.0
 
