@@ -322,7 +322,8 @@ class CookieStore {
     String requestDomain,
     String requestPath,
   ) {
-    bool containsKey(String key) => attrs.containsKey(key) || attrs.containsKey(key.toLowerCase());
+    bool containsKey(String key) =>
+        attrs.containsKey(key) || attrs.containsKey(key.toLowerCase());
     String? attr(String key) => attrs[key] ?? attrs[key.toLowerCase()];
 
     // Go through the steps in RFC 6265 section 5.3
@@ -371,13 +372,15 @@ class CookieStore {
         cookie.expiryTime = HttpDate.parse(expires);
       } catch (e) {
         for (final replacement in weekdays) {
-          expires = expires.replaceAll(replacement.abbreviation, replacement.fullname);
+          expires = expires.replaceAll(
+              replacement.abbreviation, replacement.fullname);
         }
         try {
           cookie.expiryTime = HttpDate.parse(expires);
         } catch (e) {
           for (final replacement in weekdays) {
-            expires = expires.replaceAll(replacement.fullname, replacement.abbreviation);
+            expires = expires.replaceAll(
+                replacement.fullname, replacement.abbreviation);
           }
           try {
             cookie.expiryTime = HttpDate.parse(expires);
@@ -443,7 +446,7 @@ class CookieStore {
     cookie.secure = attrs.containsKey("secure");
 
     // Step 9
-    cookie.secure = attrs.containsKey("httponly");
+    cookie.httpOnly = attrs.containsKey("httponly");
 
     // Step 10
     // Non-HTTP APIs are not supported, skip

@@ -38,3 +38,6 @@ Fix path handling and some other minor changes
 
 # 0.4.1
 Remove unused dependency on `http`
+
+# 0.4.2
+Fix typo corrupting httpOnly and secure when processing cookie
