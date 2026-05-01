@@ -40,6 +40,58 @@ void main() {
         "asd=fgd;expires=Fri, 23 Apr 2800 13:45:56 GMT", "example.com", "/");
     expect(store.cookies.length, 3);
   });
+
+  test('Cookie Store - domain cookies are accepted for matching subdomains', () {
+    final store = CookieStore();
+
+    expect(
+      store.updateCookies(
+          "shared=true; Domain=example.com; Secure; HttpOnly",
+          "sub.example.com",
+          "/login"),
+      isTrue,
+    );
+
+    expect(store.cookies, hasLength(1));
+    expect(store.cookies.single.domain, "example.com");
+    expect(store.cookies.single.hostOnly, isFalse);
+    expect(store.cookies.single.path, "/");
+    expect(store.cookies.single.secure, isTrue);
+    expect(store.cookies.single.httpOnly, isTrue);
+    expect(
+      CookieStore.buildCookieHeader(
+          store.getCookiesForRequest("example.com", "/")),
+      "shared=true",
+    );
+    expect(
+      CookieStore.buildCookieHeader(
+          store.getCookiesForRequest("deep.sub.example.com", "/")),
+      "shared=true",
+    );
+  });
+
+  test('Cookie Store - host-only and mismatched domain cookies are isolated', () {
+    final store = CookieStore();
+
+    expect(store.updateCookies("hostOnly=true", "sub.example.com", "/"), isTrue);
+    expect(
+      store.updateCookies("wrong=true; Domain=other.com", "example.com", "/"),
+      isFalse,
+    );
+
+    expect(store.cookies, hasLength(1));
+    expect(store.cookies.single.hostOnly, isTrue);
+    expect(
+      CookieStore.buildCookieHeader(
+          store.getCookiesForRequest("sub.example.com", "/")),
+      "hostOnly=true",
+    );
+    expect(
+      CookieStore.buildCookieHeader(
+          store.getCookiesForRequest("example.com", "/")),
+      "",
+    );
+  });
   test('Cookie Store - Test the canonicalisation method', () {
     CookieStore store = CookieStore();
 
@@ -142,6 +194,42 @@ void main() {
     expect(store.cookies.length, 0);
   });
 
+  test('reduceSize clears expired cookies and evicts oldest when forced', () {
+    final store = CookieStore();
+    final oldCookie = Cookie(
+      "old",
+      "true",
+      creationTime: DateTime.utc(2024, 1, 1),
+      lastAccessTime: DateTime.utc(2024, 1, 1),
+    )
+      ..domain = "example.com"
+      ..path = "/";
+    final newCookie = Cookie(
+      "new",
+      "true",
+      creationTime: DateTime.utc(2024, 1, 2),
+      lastAccessTime: DateTime.utc(2024, 1, 2),
+    )
+      ..domain = "example.com"
+      ..path = "/";
+    final expiredCookie = Cookie(
+      "expired",
+      "true",
+      creationTime: DateTime.utc(2024, 1, 3),
+      lastAccessTime: DateTime.utc(2024, 1, 3),
+    )
+      ..domain = "example.com"
+      ..path = "/"
+      ..persistent = true
+      ..expiryTime = DateTime.now().subtract(const Duration(days: 1));
+
+    store.cookies = [oldCookie, newCookie, expiredCookie];
+
+    expect(store.reduceSize(1, true, numExcessive: 10), isTrue);
+    expect(store.cookies, hasLength(1));
+    expect(store.cookies.single.name, "new");
+  });
+
   test('onSessionEnded removes only non-persistent cookies', () {
     final store = CookieStore();
 
@@ -157,6 +245,38 @@ void main() {
 
     expect(store.cookies.length, 1);
     expect(store.cookies.single.name, "persistent_cookie");
+  });
+
+  test('new cookies replace existing cookies with the same name/domain/path', () {
+    final store = CookieStore();
+
+    expect(store.updateCookies("session=first", "example.com", "/"), isTrue);
+    expect(store.updateCookies("session=second", "example.com", "/"), isTrue);
+
+    expect(store.cookies, hasLength(1));
+    expect(store.cookies.single.value, "second");
+  });
+
+  test('expires parsing accepts legacy weekday formats and rejects invalid dates',
+      () {
+    final validStore = CookieStore();
+    final invalidStore = CookieStore();
+
+    expect(
+      validStore.updateCookies(
+          "legacy=true; Expires=Thursday, 1 Jan 1970 23:59:59 GMT",
+          "example.com",
+          "/"),
+      isTrue,
+    );
+    expect(
+      invalidStore.updateCookies(
+          "broken=true; Expires=definitely-not-a-date", "example.com", "/"),
+      isFalse,
+    );
+
+    expect(validStore.cookies, isEmpty);
+    expect(invalidStore.cookies, isEmpty);
   });
 
   test('End to end tests', () {
@@ -213,6 +333,12 @@ void main() {
       check('/', 'test=true', 'not a subpath of path attribute');
       check('/login', 'test=true', 'path is below / but not part of example');
       check('/login/path', 'lang=en/ca;test=true', 'path is below / but not part of example');
+    });
+
+    test('prefixes only match on path segment boundaries', () {
+      expect(store.pathMatches("/foobar", "/foo"), isFalse);
+      expect(store.pathMatches("/foo/bar", "/foo"), isTrue);
+      expect(store.pathMatches("/foo", "/foo"), isTrue);
     });
   });
 }

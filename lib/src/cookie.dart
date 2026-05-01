@@ -162,8 +162,16 @@ class CookieStore {
   List<Cookie> getCookiesForRequest(String requestDomain, String requestPath) {
     List<Cookie> ret = [];
     for (Cookie cookie in cookies) {
-      if (_domainMatches(cookie.domain, requestDomain) &&
-          pathMatches(requestPath, cookie.path)) {
+      final domainMatches = cookie.hostOnly
+          ? (() {
+              try {
+                return cookie.domain == toCanonical(requestDomain);
+              } on FormatException {
+                return false;
+              }
+            })()
+          : _domainMatches(requestDomain, cookie.domain);
+      if (domainMatches && pathMatches(requestPath, cookie.path)) {
         ret.add(cookie);
       }
     }
@@ -328,9 +336,14 @@ class CookieStore {
     String requestDomain,
     String requestPath,
   ) {
+    final normalizedAttrs = <String, String>{};
+    for (final entry in attrs.entries) {
+      normalizedAttrs[entry.key.toLowerCase()] = entry.value;
+    }
+
     bool containsKey(String key) =>
-        attrs.containsKey(key) || attrs.containsKey(key.toLowerCase());
-    String? attr(String key) => attrs[key] ?? attrs[key.toLowerCase()];
+        normalizedAttrs.containsKey(key.toLowerCase());
+    String? attr(String key) => normalizedAttrs[key.toLowerCase()];
 
     // Go through the steps in RFC 6265 section 5.3
 
@@ -377,19 +390,23 @@ class CookieStore {
       try {
         cookie.expiryTime = HttpDate.parse(expires);
       } catch (e) {
+        String fullWeekdayExpires = expires;
         for (final replacement in weekdays) {
-          expires = expires.replaceAll(
-              replacement.abbreviation, replacement.fullname);
+          fullWeekdayExpires = fullWeekdayExpires.replaceAll(
+              RegExp("\\b${replacement.abbreviation}\\b"),
+              replacement.fullname);
         }
         try {
-          cookie.expiryTime = HttpDate.parse(expires);
+          cookie.expiryTime = HttpDate.parse(fullWeekdayExpires);
         } catch (e) {
+          String abbreviatedWeekdayExpires = expires;
           for (final replacement in weekdays) {
-            expires = expires.replaceAll(
-                replacement.fullname, replacement.abbreviation);
+            abbreviatedWeekdayExpires = abbreviatedWeekdayExpires.replaceAll(
+                RegExp("\\b${replacement.fullname}\\b"),
+                replacement.abbreviation);
           }
           try {
-            cookie.expiryTime = HttpDate.parse(expires);
+            cookie.expiryTime = HttpDate.parse(abbreviatedWeekdayExpires);
           } catch (e) {
             return false;
           }
@@ -406,7 +423,7 @@ class CookieStore {
 
     // Step 4
     if (containsKey("Domain")) {
-      cookie.domain = attr("domain")!;
+      cookie.domain = attr("Domain")!;
     }
 
     // Step 5
@@ -414,11 +431,11 @@ class CookieStore {
 
     // Step 6
     if (cookie.domain != "") {
-      if (!_domainMatches(cookie.domain, requestDomain)) {
+      if (!_domainMatches(requestDomain, cookie.domain)) {
         return false;
       } else {
         cookie.hostOnly = false;
-        cookie.domain = attr("domain")!;
+        cookie.domain = attr("Domain")!;
       }
     } else {
       cookie.hostOnly = true;
@@ -438,7 +455,7 @@ class CookieStore {
       cookie.path = "/";
     }
     // 5.1.4 Step 3
-    else if (cookie.path.allMatches("/").length == 1) {
+    else if ("/".allMatches(cookie.path).length == 1) {
       cookie.path = "/";
     }
     // 5.1.4 Step 4
@@ -449,10 +466,10 @@ class CookieStore {
     // 5.1.4 done
 
     // Step 8
-    cookie.secure = attrs.containsKey("secure");
+    cookie.secure = containsKey("Secure");
 
     // Step 9
-    cookie.httpOnly = attrs.containsKey("httponly");
+    cookie.httpOnly = containsKey("HttpOnly");
 
     // Step 10
     // Non-HTTP APIs are not supported, skip
