@@ -177,6 +177,7 @@ class CookieStore {
       if (domainMatches &&
           pathMatches(requestPath, cookie.path) &&
           (includeSecure || !cookie.secure)) {
+        cookie.lastAccessTime = DateTime.now();
         ret.add(cookie);
       }
     }

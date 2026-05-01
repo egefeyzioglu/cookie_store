@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cookie_store/src/cookie.dart';
 import 'package:test/test.dart';
 
@@ -229,6 +231,24 @@ void main() {
     expect(store.reduceSize(1, true, numExcessive: 10), isTrue);
     expect(store.cookies, hasLength(1));
     expect(store.cookies.single.name, "new");
+  });
+
+  test('last access time is updated on getCookiesForRequest', () {
+    final store = CookieStore();
+    store.updateCookies("test=true", "example.com", "/");
+    final before = store.cookies.firstWhere((c) {
+      return c.name == 'test';
+    }).lastAccessTime;
+    sleep(Duration(seconds: 2));
+    store.getCookiesForRequest("example.com", "/");
+    expect(
+        store.cookies
+            .firstWhere((c) {
+              return c.name == 'test';
+            })
+            .lastAccessTime
+            .isAfter(before),
+        isTrue);
   });
 
   test('onSessionEnded removes only non-persistent cookies', () {
