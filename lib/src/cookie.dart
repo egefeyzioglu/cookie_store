@@ -46,8 +46,14 @@ class CookieStore {
   /// Call this when the session ends (defined by you,) to clear cookies that
   /// were not set as persistent.
   void onSessionEnded() {
-    for (Cookie cookie in _cookies) {
-      if (!cookie.persistent) _cookies.remove(cookie);
+    final toRemove = <Cookie>[];
+    for (final cookie in _cookies) {
+      if (!cookie.persistent) {
+        toRemove.add(cookie);
+      }
+    }
+    for (final cookie in toRemove) {
+      _cookies.remove(cookie);
     }
   }
 
@@ -150,14 +156,28 @@ class CookieStore {
   /// Get the cookies you need to submit for a given [requestDomain] and a
   /// given [requestPath].
   ///
+  /// Set [includeSecure] to false to strip Secure (HTTPS-only) cookies
+  ///
   /// This is the method you should be using if you want to treat this library
   /// as a black box and have it store cookies for you, along with
   /// [updateCookies].
-  List<Cookie> getCookiesForRequest(String requestDomain, String requestPath) {
+  List<Cookie> getCookiesForRequest(String requestDomain, String requestPath,
+      {bool includeSecure = true}) {
     List<Cookie> ret = [];
     for (Cookie cookie in cookies) {
-      if (_domainMatches(cookie.domain, requestDomain) &&
-          pathMatches(requestPath, cookie.path)) {
+      final domainMatches = cookie.hostOnly
+          ? (() {
+              try {
+                return cookie.domain == toCanonical(requestDomain);
+              } on FormatException {
+                return false;
+              }
+            })()
+          : _domainMatches(requestDomain, cookie.domain);
+      if (domainMatches &&
+          pathMatches(requestPath, cookie.path) &&
+          (includeSecure || !cookie.secure)) {
+        cookie.lastAccessTime = DateTime.now();
         ret.add(cookie);
       }
     }
@@ -193,7 +213,7 @@ class CookieStore {
     // If the paths are identical, they match
     if (requestPath == cookiePath) return true;
     // If the cookie path is a prefix of the request path:
-    if (requestPath.startsWith(RegExp.escape(cookiePath))) {
+    if (requestPath.startsWith(cookiePath)) {
       // They match if the cookie path ends with a '/', or
       if (cookiePath.endsWith("/")) return true;
       // If the first character in the request path that isn't in the cookie
@@ -322,9 +342,14 @@ class CookieStore {
     String requestDomain,
     String requestPath,
   ) {
+    final normalizedAttrs = <String, String>{};
+    for (final entry in attrs.entries) {
+      normalizedAttrs[entry.key.toLowerCase()] = entry.value;
+    }
+
     bool containsKey(String key) =>
-        attrs.containsKey(key) || attrs.containsKey(key.toLowerCase());
-    String? attr(String key) => attrs[key] ?? attrs[key.toLowerCase()];
+        normalizedAttrs.containsKey(key.toLowerCase());
+    String? attr(String key) => normalizedAttrs[key.toLowerCase()];
 
     // Go through the steps in RFC 6265 section 5.3
 
@@ -371,19 +396,23 @@ class CookieStore {
       try {
         cookie.expiryTime = HttpDate.parse(expires);
       } catch (e) {
+        String fullWeekdayExpires = expires;
         for (final replacement in weekdays) {
-          expires = expires.replaceAll(
-              replacement.abbreviation, replacement.fullname);
+          fullWeekdayExpires = fullWeekdayExpires.replaceAll(
+              RegExp("\\b${replacement.abbreviation}\\b"),
+              replacement.fullname);
         }
         try {
-          cookie.expiryTime = HttpDate.parse(expires);
+          cookie.expiryTime = HttpDate.parse(fullWeekdayExpires);
         } catch (e) {
+          String abbreviatedWeekdayExpires = expires;
           for (final replacement in weekdays) {
-            expires = expires.replaceAll(
-                replacement.fullname, replacement.abbreviation);
+            abbreviatedWeekdayExpires = abbreviatedWeekdayExpires.replaceAll(
+                RegExp("\\b${replacement.fullname}\\b"),
+                replacement.abbreviation);
           }
           try {
-            cookie.expiryTime = HttpDate.parse(expires);
+            cookie.expiryTime = HttpDate.parse(abbreviatedWeekdayExpires);
           } catch (e) {
             return false;
           }
@@ -400,7 +429,7 @@ class CookieStore {
 
     // Step 4
     if (containsKey("Domain")) {
-      cookie.domain = attr("domain")!;
+      cookie.domain = attr("Domain")!;
     }
 
     // Step 5
@@ -408,11 +437,11 @@ class CookieStore {
 
     // Step 6
     if (cookie.domain != "") {
-      if (!_domainMatches(cookie.domain, requestDomain)) {
+      if (!_domainMatches(requestDomain, cookie.domain)) {
         return false;
       } else {
         cookie.hostOnly = false;
-        cookie.domain = attr("domain")!;
+        cookie.domain = attr("Domain")!;
       }
     } else {
       cookie.hostOnly = true;
@@ -424,29 +453,29 @@ class CookieStore {
       cookie.path = attr("Path")!;
     } else {
       cookie.path = requestPath;
+      // Apply section 5.1.4 to fix the path attribute
+      // 5.1.4 Step 1 is done by the caller
+      // 5.1.4 Step 2
+      if (cookie.path.isEmpty || !cookie.path.startsWith("/")) {
+        cookie.path = "/";
+      }
+      // 5.1.4 Step 3
+      else if ("/".allMatches(cookie.path).length == 1) {
+        cookie.path = "/";
+      }
+      // 5.1.4 Step 4
+      else {
+        // Up to but not including the last "/" in the current cookie path
+        cookie.path = cookie.path.substring(0, cookie.path.lastIndexOf("/"));
+      }
+      // 5.1.4 done
     }
-    // Apply section 5.1.4 to fix the path attribute
-    // 5.1.4 Step 1 is done by the caller
-    // 5.1.4 Step 2
-    if (cookie.path.isEmpty || !cookie.path.startsWith("/")) {
-      cookie.path = "/";
-    }
-    // 5.1.4 Step 3
-    else if (cookie.path.allMatches("/").length == 1) {
-      cookie.path = "/";
-    }
-    // 5.1.4 Step 4
-    else {
-      // Up to but not including the last "/" in the current cookie path
-      cookie.path = cookie.path.substring(0, cookie.path.lastIndexOf("/"));
-    }
-    // 5.1.4 done
 
     // Step 8
-    cookie.secure = attrs.containsKey("secure");
+    cookie.secure = containsKey("Secure");
 
     // Step 9
-    cookie.httpOnly = attrs.containsKey("httponly");
+    cookie.httpOnly = containsKey("HttpOnly");
 
     // Step 10
     // Non-HTTP APIs are not supported, skip
@@ -475,27 +504,31 @@ class CookieStore {
     // Otherwise, see if they domain-match the other way.
     // All of the following must hold:
     // * domainString is a suffix of the string
-    bool match = string.endsWith(domainString);
+    if (!string.endsWith(domainString)) return false;
     // * The last character of the string that is not included in the domain
     //   string is '.'.
     int indexAfterDomainString = string.length - domainString.length - 1;
-    if (indexAfterDomainString < 0) return false;
-    match &= string[indexAfterDomainString] == "\x2E"; // 0x2E = '.'
+    if (indexAfterDomainString < 0 ||
+            string[indexAfterDomainString] != "\x2E" // 0x2E = '.'
+        ) {
+      return false;
+    }
     // * The string is a host name (so not an IP address)
-    bool notIpAddr = false;
+    bool notIpV4 = false;
+    bool notIpV6 = false;
     try {
       Uri.parseIPv4Address(string);
     } on FormatException {
-      notIpAddr = true;
+      notIpV4 = true;
     }
     try {
       Uri.parseIPv6Address(string);
     } on FormatException {
-      notIpAddr = true;
+      notIpV6 = true;
     }
-    match &= notIpAddr;
-    // If all of them were true, return true. Otherwise return false.
-    return match;
+    if (!notIpV4 || !notIpV6) return false;
+
+    return true;
   }
 
   /// Converts a given [requestDomain] to a canonical representation per RFC6265

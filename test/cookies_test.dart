@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cookie_store/src/cookie.dart';
 import 'package:test/test.dart';
 
@@ -39,6 +41,59 @@ void main() {
     store.updateCookies(
         "asd=fgd;expires=Fri, 23 Apr 2800 13:45:56 GMT", "example.com", "/");
     expect(store.cookies.length, 3);
+  });
+
+  test('Cookie Store - domain cookies are accepted for matching subdomains',
+      () {
+    final store = CookieStore();
+
+    expect(
+      store.updateCookies("shared=true; Domain=example.com; Secure; HttpOnly",
+          "sub.example.com", "/login"),
+      isTrue,
+    );
+
+    expect(store.cookies, hasLength(1));
+    expect(store.cookies.single.domain, "example.com");
+    expect(store.cookies.single.hostOnly, isFalse);
+    expect(store.cookies.single.path, "/");
+    expect(store.cookies.single.secure, isTrue);
+    expect(store.cookies.single.httpOnly, isTrue);
+    expect(
+      CookieStore.buildCookieHeader(
+          store.getCookiesForRequest("example.com", "/")),
+      "shared=true",
+    );
+    expect(
+      CookieStore.buildCookieHeader(
+          store.getCookiesForRequest("deep.sub.example.com", "/")),
+      "shared=true",
+    );
+  });
+
+  test('Cookie Store - host-only and mismatched domain cookies are isolated',
+      () {
+    final store = CookieStore();
+
+    expect(
+        store.updateCookies("hostOnly=true", "sub.example.com", "/"), isTrue);
+    expect(
+      store.updateCookies("wrong=true; Domain=other.com", "example.com", "/"),
+      isFalse,
+    );
+
+    expect(store.cookies, hasLength(1));
+    expect(store.cookies.single.hostOnly, isTrue);
+    expect(
+      CookieStore.buildCookieHeader(
+          store.getCookiesForRequest("sub.example.com", "/")),
+      "hostOnly=true",
+    );
+    expect(
+      CookieStore.buildCookieHeader(
+          store.getCookiesForRequest("example.com", "/")),
+      "",
+    );
   });
   test('Cookie Store - Test the canonicalisation method', () {
     CookieStore store = CookieStore();
@@ -142,22 +197,157 @@ void main() {
     expect(store.cookies.length, 0);
   });
 
+  test('reduceSize clears expired cookies and evicts oldest when forced', () {
+    final store = CookieStore();
+    final oldCookie = Cookie(
+      "old",
+      "true",
+      creationTime: DateTime.utc(2024, 1, 1),
+      lastAccessTime: DateTime.utc(2024, 1, 1),
+    )
+      ..domain = "example.com"
+      ..path = "/";
+    final newCookie = Cookie(
+      "new",
+      "true",
+      creationTime: DateTime.utc(2024, 1, 2),
+      lastAccessTime: DateTime.utc(2024, 1, 2),
+    )
+      ..domain = "example.com"
+      ..path = "/";
+    final expiredCookie = Cookie(
+      "expired",
+      "true",
+      creationTime: DateTime.utc(2024, 1, 3),
+      lastAccessTime: DateTime.utc(2024, 1, 3),
+    )
+      ..domain = "example.com"
+      ..path = "/"
+      ..persistent = true
+      ..expiryTime = DateTime.now().subtract(const Duration(days: 1));
+
+    store.cookies = [oldCookie, newCookie, expiredCookie];
+
+    expect(store.reduceSize(1, true, numExcessive: 10), isTrue);
+    expect(store.cookies, hasLength(1));
+    expect(store.cookies.single.name, "new");
+  });
+
+  test('last access time is updated on getCookiesForRequest', () {
+    final store = CookieStore();
+    store.updateCookies("test=true", "example.com", "/");
+    final before = store.cookies.firstWhere((c) {
+      return c.name == 'test';
+    }).lastAccessTime;
+    sleep(Duration(seconds: 2));
+    store.getCookiesForRequest("example.com", "/");
+    expect(
+        store.cookies
+            .firstWhere((c) {
+              return c.name == 'test';
+            })
+            .lastAccessTime
+            .isAfter(before),
+        isTrue);
+  });
+
+  test('onSessionEnded removes only non-persistent cookies', () {
+    final store = CookieStore();
+
+    store.updateCookies("session_cookie=true", "example.com", "/");
+    store.updateCookies(
+        "persistent_cookie=true; Expires=Fri, 23 Apr 2800 13:45:56 GMT",
+        "example.com",
+        "/");
+
+    expect(store.cookies.length, 2);
+
+    store.onSessionEnded();
+
+    expect(store.cookies.length, 1);
+    expect(store.cookies.single.name, "persistent_cookie");
+  });
+
+  test('new cookies replace existing cookies with the same name/domain/path',
+      () {
+    final store = CookieStore();
+
+    expect(store.updateCookies("session=first", "example.com", "/"), isTrue);
+    expect(store.updateCookies("session=second", "example.com", "/"), isTrue);
+
+    expect(store.cookies, hasLength(1));
+    expect(store.cookies.single.value, "second");
+  });
+
+  test(
+      'expires parsing accepts legacy weekday formats and rejects invalid dates',
+      () {
+    final validStore = CookieStore();
+    final invalidStore = CookieStore();
+
+    expect(
+      validStore.updateCookies(
+          "legacy=true; Expires=Thursday, 1 Jan 1970 23:59:59 GMT",
+          "example.com",
+          "/"),
+      isTrue,
+    );
+    expect(
+      invalidStore.updateCookies(
+          "broken=true; Expires=definitely-not-a-date", "example.com", "/"),
+      isFalse,
+    );
+
+    expect(validStore.cookies, isEmpty);
+    expect(invalidStore.cookies, isEmpty);
+  });
+
+  test(
+      'Secure cookies are stripped by getCookiesForRequest() when includeSecure is false',
+      () {
+    CookieStore store = CookieStore();
+    store.updateCookies("PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3; Secure",
+        "example.com", "/sample-directory/sample.php");
+    expect(
+        store
+            .getCookiesForRequest("example.com", "/sample-directory/sample.php",
+                includeSecure: false)
+            .isEmpty,
+        isTrue);
+    expect(
+        store
+            .getCookiesForRequest("example.com", "/sample-directory/sample.php",
+                includeSecure: true)
+            .isEmpty,
+        isFalse);
+    expect(
+        store
+            .getCookiesForRequest("example.com", "/sample-directory/sample.php")
+            .isEmpty,
+        isFalse);
+  });
+
   test('End to end tests', () {
     CookieStore store = CookieStore();
-    store.updateCookies("PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3", "example.com", "/sample-directory/sample.php");
-    String cookieHeader = CookieStore.buildCookieHeader(store.getCookiesForRequest("example.com", "/"));
+    store.updateCookies("PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3", "example.com",
+        "/sample-directory/sample.php");
+    String cookieHeader = CookieStore.buildCookieHeader(
+        store.getCookiesForRequest("example.com", "/"));
     // the cookie was set on "/sample-directory/" so should not be used for "/"
     expect("", cookieHeader);
 
     store.updateCookies("lang=en/ca", "example.com", "/");
-    cookieHeader = CookieStore.buildCookieHeader(store.getCookiesForRequest("example.com", "/"));
+    cookieHeader = CookieStore.buildCookieHeader(
+        store.getCookiesForRequest("example.com", "/"));
     expect("lang=en/ca", cookieHeader);
 
-    cookieHeader = CookieStore.buildCookieHeader(store.getCookiesForRequest("example.com", "/sample-directory"));
+    cookieHeader = CookieStore.buildCookieHeader(
+        store.getCookiesForRequest("example.com", "/sample-directory"));
     expect("PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3;lang=en/ca", cookieHeader);
 
     store.updateCookies("test=true", "example.com", "/");
-    cookieHeader = CookieStore.buildCookieHeader(store.getCookiesForRequest("example.com", "/example"));
+    cookieHeader = CookieStore.buildCookieHeader(
+        store.getCookiesForRequest("example.com", "/example"));
     expect("lang=en/ca;test=true", cookieHeader);
   });
 
@@ -165,9 +355,12 @@ void main() {
     const requestDomain = 'example.com';
     late CookieStore store;
 
-    void check(String requestPath, String expectedCookieHeader, [String? reason]) {
-      final requestHeader = CookieStore.buildCookieHeader(store.getCookiesForRequest(requestDomain, requestPath));
-      expect(requestHeader, expectedCookieHeader, reason: '$requestPath $reason');
+    void check(String requestPath, String expectedCookieHeader,
+        [String? reason]) {
+      final requestHeader = CookieStore.buildCookieHeader(
+          store.getCookiesForRequest(requestDomain, requestPath));
+      expect(requestHeader, expectedCookieHeader,
+          reason: '$requestPath $reason');
     }
 
     setUp(() {
@@ -175,7 +368,8 @@ void main() {
     });
 
     test('without explicit path attribute', () {
-      store.updateCookies("PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3", requestDomain, "/sample-directory/sample.php");
+      store.updateCookies("PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3", requestDomain,
+          "/sample-directory/sample.php");
       check("/", "", "Request path is root and not below /sample-directory");
       check("/sample-directory", "PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3");
 
@@ -187,15 +381,52 @@ void main() {
     });
 
     test('with path attribute', () {
-      assert(store.updateCookies('PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3; Path=/example/', requestDomain, "/sample-directory/sample.php"));
-      assert(store.updateCookies("lang=en/ca; Path=/login/path/page", requestDomain, "/sample-directory/sample.php"));
-      assert(store.updateCookies('test=true; Path=/', requestDomain, "/sample-directory/sample.php"));
+      assert(store.updateCookies(
+          'PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3; Path=/example/',
+          requestDomain,
+          "/sample-directory/sample.php"));
+      assert(store.updateCookies("lang=en/ca; Path=/login/path/page",
+          requestDomain, "/sample-directory/sample.php"));
+      assert(store.updateCookies(
+          'test=true; Path=/', requestDomain, "/sample-directory/sample.php"));
 
-      check('/example', 'PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3;test=true', 'exactly matches path attribute');
-      check('/example/subpath/with/page', 'PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3;test=true', 'subpath of path attribute');
+      expect(
+          store.cookies.firstWhere((cookie) => cookie.name == 'PHPSESSID').path,
+          '/example/',
+          reason: 'explicit Path attribute should be preserved');
+      expect(store.cookies.firstWhere((cookie) => cookie.name == 'lang').path,
+          '/login/path/page',
+          reason: 'explicit Path attribute should be preserved');
+      expect(
+          store.cookies.firstWhere((cookie) => cookie.name == 'test').path, '/',
+          reason: 'explicit Path attribute should be preserved');
+
+      check('/example', 'test=true',
+          'parent path should not match a valid explicit Path attribute');
+      check('/example/', 'PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3;test=true',
+          'exact path should match a valid explicit Path attribute');
+      check(
+          '/example/subpath/with/page',
+          'PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3;test=true',
+          'subpath of path attribute');
       check('/', 'test=true', 'not a subpath of path attribute');
       check('/login', 'test=true', 'path is below / but not part of example');
-      check('/login/path', 'lang=en/ca;test=true', 'path is below / but not part of example');
+      check('/login/path', 'test=true',
+          'parent path should not match a valid explicit Path attribute');
+      check('/login/path/page', 'lang=en/ca;test=true',
+          'exact path should match a valid explicit Path attribute');
+    });
+
+    test('prefixes only match on path segment boundaries', () {
+      expect(store.pathMatches("/foobar", "/foo"), isFalse);
+      expect(store.pathMatches("/foo/bar", "/foo"), isTrue);
+      expect(store.pathMatches("/foo", "/foo"), isTrue);
+    });
+
+    test('path matching handles regex metachars correctly', () {
+      expect(store.pathMatches('/a.bc/def', '/a.bc/'), isTrue);
+      expect(store.pathMatches('/a.^\$bc/def', '/a.^\$bc/'), isTrue);
+      expect(store.pathMatches('/a([]])\'\\bc/def', '/a([]])\'\\bc/'), isTrue);
     });
   });
 }
