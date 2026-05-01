@@ -447,23 +447,23 @@ class CookieStore {
       cookie.path = attr("Path")!;
     } else {
       cookie.path = requestPath;
+      // Apply section 5.1.4 to fix the path attribute
+      // 5.1.4 Step 1 is done by the caller
+      // 5.1.4 Step 2
+      if (cookie.path.isEmpty || !cookie.path.startsWith("/")) {
+        cookie.path = "/";
+      }
+      // 5.1.4 Step 3
+      else if ("/".allMatches(cookie.path).length == 1) {
+        cookie.path = "/";
+      }
+      // 5.1.4 Step 4
+      else {
+        // Up to but not including the last "/" in the current cookie path
+        cookie.path = cookie.path.substring(0, cookie.path.lastIndexOf("/"));
+      }
+      // 5.1.4 done
     }
-    // Apply section 5.1.4 to fix the path attribute
-    // 5.1.4 Step 1 is done by the caller
-    // 5.1.4 Step 2
-    if (cookie.path.isEmpty || !cookie.path.startsWith("/")) {
-      cookie.path = "/";
-    }
-    // 5.1.4 Step 3
-    else if ("/".allMatches(cookie.path).length == 1) {
-      cookie.path = "/";
-    }
-    // 5.1.4 Step 4
-    else {
-      // Up to but not including the last "/" in the current cookie path
-      cookie.path = cookie.path.substring(0, cookie.path.lastIndexOf("/"));
-    }
-    // 5.1.4 done
 
     // Step 8
     cookie.secure = containsKey("Secure");
