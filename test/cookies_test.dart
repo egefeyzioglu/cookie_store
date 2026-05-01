@@ -142,6 +142,23 @@ void main() {
     expect(store.cookies.length, 0);
   });
 
+  test('onSessionEnded removes only non-persistent cookies', () {
+    final store = CookieStore();
+
+    store.updateCookies("session_cookie=true", "example.com", "/");
+    store.updateCookies(
+        "persistent_cookie=true; Expires=Fri, 23 Apr 2800 13:45:56 GMT",
+        "example.com",
+        "/");
+
+    expect(store.cookies.length, 2);
+
+    store.onSessionEnded();
+
+    expect(store.cookies.length, 1);
+    expect(store.cookies.single.name, "persistent_cookie");
+  });
+
   test('End to end tests', () {
     CookieStore store = CookieStore();
     store.updateCookies("PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3", "example.com", "/sample-directory/sample.php");

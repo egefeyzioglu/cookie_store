@@ -46,8 +46,14 @@ class CookieStore {
   /// Call this when the session ends (defined by you,) to clear cookies that
   /// were not set as persistent.
   void onSessionEnded() {
-    for (Cookie cookie in _cookies) {
-      if (!cookie.persistent) _cookies.remove(cookie);
+    final toRemove = <Cookie>[];
+    for (final cookie in _cookies) {
+      if (!cookie.persistent) {
+        toRemove.add(cookie);
+      }
+    }
+    for (final cookie in toRemove) {
+      _cookies.remove(cookie);
     }
   }
 
