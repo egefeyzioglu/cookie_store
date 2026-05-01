@@ -377,5 +377,11 @@ void main() {
       expect(store.pathMatches("/foo/bar", "/foo"), isTrue);
       expect(store.pathMatches("/foo", "/foo"), isTrue);
     });
+
+    test('path matching handles regex metachars correctly', () {
+      expect(store.pathMatches('/a.bc/def', '/a.bc/'), isTrue);
+      expect(store.pathMatches('/a.^\$bc/def', '/a.^\$bc/'), isTrue);
+      expect(store.pathMatches('/a([]])\'\\bc/def', '/a([]])\'\\bc/'), isTrue);
+    });
   });
 }

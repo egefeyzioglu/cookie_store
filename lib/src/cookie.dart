@@ -207,7 +207,7 @@ class CookieStore {
     // If the paths are identical, they match
     if (requestPath == cookiePath) return true;
     // If the cookie path is a prefix of the request path:
-    if (requestPath.startsWith(RegExp.escape(cookiePath))) {
+    if (requestPath.startsWith(cookiePath)) {
       // They match if the cookie path ends with a '/', or
       if (cookiePath.endsWith("/")) return true;
       // If the first character in the request path that isn't in the cookie
