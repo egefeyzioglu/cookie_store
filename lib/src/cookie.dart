@@ -498,27 +498,31 @@ class CookieStore {
     // Otherwise, see if they domain-match the other way.
     // All of the following must hold:
     // * domainString is a suffix of the string
-    bool match = string.endsWith(domainString);
+    if (!string.endsWith(domainString)) return false;
     // * The last character of the string that is not included in the domain
     //   string is '.'.
     int indexAfterDomainString = string.length - domainString.length - 1;
-    if (indexAfterDomainString < 0) return false;
-    match &= string[indexAfterDomainString] == "\x2E"; // 0x2E = '.'
+    if (indexAfterDomainString < 0 ||
+            string[indexAfterDomainString] != "\x2E" // 0x2E = '.'
+        ) {
+      return false;
+    }
     // * The string is a host name (so not an IP address)
-    bool notIpAddr = false;
+    bool notIpV4 = false;
+    bool notIpV6 = false;
     try {
       Uri.parseIPv4Address(string);
     } on FormatException {
-      notIpAddr = true;
+      notIpV4 = true;
     }
     try {
       Uri.parseIPv6Address(string);
     } on FormatException {
-      notIpAddr = true;
+      notIpV6 = true;
     }
-    match &= notIpAddr;
-    // If all of them were true, return true. Otherwise return false.
-    return match;
+    if (!notIpV4 || !notIpV6) return false;
+
+    return true;
   }
 
   /// Converts a given [requestDomain] to a canonical representation per RFC6265
