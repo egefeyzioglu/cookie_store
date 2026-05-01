@@ -156,10 +156,13 @@ class CookieStore {
   /// Get the cookies you need to submit for a given [requestDomain] and a
   /// given [requestPath].
   ///
+  /// Set [includeSecure] to false to strip Secure (HTTPS-only) cookies
+  ///
   /// This is the method you should be using if you want to treat this library
   /// as a black box and have it store cookies for you, along with
   /// [updateCookies].
-  List<Cookie> getCookiesForRequest(String requestDomain, String requestPath) {
+  List<Cookie> getCookiesForRequest(String requestDomain, String requestPath,
+      {bool includeSecure = true}) {
     List<Cookie> ret = [];
     for (Cookie cookie in cookies) {
       final domainMatches = cookie.hostOnly
@@ -171,7 +174,9 @@ class CookieStore {
               }
             })()
           : _domainMatches(requestDomain, cookie.domain);
-      if (domainMatches && pathMatches(requestPath, cookie.path)) {
+      if (domainMatches &&
+          pathMatches(requestPath, cookie.path) &&
+          (includeSecure || !cookie.secure)) {
         ret.add(cookie);
       }
     }

@@ -282,6 +282,31 @@ void main() {
     expect(invalidStore.cookies, isEmpty);
   });
 
+  test(
+      'Secure cookies are stripped by getCookiesForRequest() when includeSecure is false',
+      () {
+    CookieStore store = CookieStore();
+    store.updateCookies("PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3; Secure",
+        "example.com", "/sample-directory/sample.php");
+    expect(
+        store
+            .getCookiesForRequest("example.com", "/sample-directory/sample.php",
+                includeSecure: false)
+            .isEmpty,
+        isTrue);
+    expect(
+        store
+            .getCookiesForRequest("example.com", "/sample-directory/sample.php",
+                includeSecure: true)
+            .isEmpty,
+        isFalse);
+    expect(
+        store
+            .getCookiesForRequest("example.com", "/sample-directory/sample.php")
+            .isEmpty,
+        isFalse);
+  });
+
   test('End to end tests', () {
     CookieStore store = CookieStore();
     store.updateCookies("PHPSESSID=el4ukv0kqbvoirg7nkp4dncpk3", "example.com",
